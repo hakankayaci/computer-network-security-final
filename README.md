@@ -1,6 +1,6 @@
 # Advanced End-to-End Encrypted Chat Application with AI-Based Anomaly Detection
 
-This is a third-year Computer and Network Security course project. It is a local, terminal-based chat system where two demo clients, Hakan and Melike, communicate through a central server. The server can relay messages, show a spy-server view, and run a local AI-style security agent over metadata logs.
+This is a Computer and Network Security course project. It is a local, terminal-based chat system where two demo clients, Hakan and Melike, communicate through a central server. The server can relay messages, show a spy-server view, and run a local AI-style security agent over metadata logs.
 
 The project is educational and safe. It runs on `localhost` only and does not perform real attacks.
 
