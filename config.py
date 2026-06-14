@@ -1,0 +1,33 @@
+"""Central configuration for the encrypted chat demo project."""
+
+HOST = "127.0.0.1"
+PORT = 5050
+ENCODING = "utf-8"
+BUFFER_SIZE = 4096
+
+PLAIN_MODE = "plain"
+ENCRYPTED_MODE = "encrypted"
+VALID_MODES = {PLAIN_MODE, ENCRYPTED_MODE}
+
+DEFAULT_DEMO_USERS = ("Hakan", "Melike")
+
+LOG_FILE = "server_logs.jsonl"
+SUSPICIOUS_LOG_FILE = "suspicious_events.log"
+DEMO_DATA_FILE = "demo_metadata_logs.jsonl"
+
+AI_MONITOR_INTERVAL_SECONDS = 4
+AI_ALERT_COOLDOWN_SECONDS = 8
+AI_RISK_THRESHOLD = 0.65
+AI_BLOCK_DURATION_SECONDS = 20
+AI_DEMO_BLOCKING_ENABLED = True
+
+MAX_CLIENT_NAME_LENGTH = 30
+MAX_MESSAGE_BYTES = 16_384
+LARGE_MESSAGE_SIZE_BYTES = 2_000
+BURST_INTERVAL_SECONDS = 0.35
+
+SOCKET_TIMEOUT_SECONDS = 2
+
+CRYPTO_INFO = b"computer-network-security-e2ee-chat-demo"
+AES_GCM_NONCE_BYTES = 12
+
