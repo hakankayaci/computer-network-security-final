@@ -74,17 +74,31 @@ def tamper_last_encrypted_message(sock: socket.socket) -> None:
 
 def main() -> None:
     print("[ATTACKER SIMULATION] Localhost-only safe suspicious behavior demo.")
+
+    # 1) Run the safe integrity (tamper) demo FIRST, while we still look like a
+    #    normal client. This guarantees the request is handled before the AI
+    #    agent has any reason to block us, so the receiver reliably shows the
+    #    integrity warning instead of racing against the temporary block.
+    sock = connect_attacker()
+    if sock is None:
+        return
+    try:
+        time.sleep(0.3)
+        tamper_last_encrypted_message(sock)
+        time.sleep(0.8)
+    finally:
+        sock.close()
+
+    # 2) Now generate the suspicious behavior the AI agent should flag.
     repeated_reconnect_attempts()
 
     sock = connect_attacker()
     if sock is None:
         return
-
     try:
         time.sleep(0.3)
         rapid_message_spam(sock)
         abnormal_message_size(sock)
-        tamper_last_encrypted_message(sock)
         print("[ATTACKER SIMULATION] Done. Watch the server terminal for AI alerts.")
         time.sleep(1.0)
     finally:

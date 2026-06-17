@@ -106,7 +106,7 @@ def main() -> None:
 
     print(f"[DEMO DATA] Wrote {len(events)} metadata events to {config.DEMO_DATA_FILE}")
     print("[DEMO DATA] Features: messages_per_minute, average_message_size, reconnect_count,")
-    print("[DEMO DATA] failed_integrity_count, time_between_messages, burst count, attempts.")
+    print("[DEMO DATA] tamper_attempt_count, time_between_messages, burst count, attempts.")
 
     agent = SecurityAgent(log_file=config.DEMO_DATA_FILE)
     for assessment in agent.analyze_log_file():

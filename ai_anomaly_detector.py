@@ -31,7 +31,7 @@ FEATURE_NAMES = (
     "messages_per_minute",
     "average_message_size",
     "reconnect_count",
-    "failed_integrity_count",
+    "tamper_attempt_count",
     "average_time_between_messages",
     "abnormal_burst_count",
     "connection_attempt_count",
@@ -85,7 +85,7 @@ class SecurityAgent:
                     1 + (i % 8),          # messages_per_minute: quiet to lively chat
                     45 + (i % 170),       # average_message_size: incl. encrypted payloads
                     0 if i % 7 else 1,    # reconnect_count: usually none
-                    0,                    # failed_integrity_count
+                    0,                    # tamper_attempt_count
                     3 + (i % 22),         # average_time_between_messages: 3-24s, plus idle
                     0,                    # abnormal_burst_count: normal users do not burst
                     1 if i % 5 else 2,    # connection_attempt_count
@@ -167,11 +167,14 @@ class SecurityAgent:
                 if event.get("event_type") in {"connect", "blocked_connection_attempt"}
             )
             reconnect_count = max(0, connection_attempts - 1)
-            failed_integrity_count = sum(
+            # Count tampering ATTEMPTS, which the server logs against the client
+            # that made them. We deliberately do NOT count integrity-failure
+            # reports here: the receiver of a tampered message is a victim and
+            # must never be penalised (and possibly blocked) for reporting it.
+            tamper_attempt_count = sum(
                 1
                 for event in recent_events
-                if event.get("event_type") == "integrity_failure"
-                or int(event.get("failed_integrity", 0) or 0) > 0
+                if event.get("event_type") == "tamper_attempt"
             )
 
             # Count the messages seen in the recent (<=60s) window directly.
@@ -183,7 +186,7 @@ class SecurityAgent:
                 "messages_per_minute": messages_per_minute,
                 "average_message_size": average_size,
                 "reconnect_count": float(reconnect_count),
-                "failed_integrity_count": float(failed_integrity_count),
+                "tamper_attempt_count": float(tamper_attempt_count),
                 "average_time_between_messages": average_interval,
                 "abnormal_burst_count": float(abnormal_burst_count),
                 "connection_attempt_count": float(connection_attempts),
@@ -213,9 +216,9 @@ class SecurityAgent:
             score += 0.12
             reasons.append("multiple reconnect attempts")
 
-        if features["failed_integrity_count"] >= 1:
+        if features["tamper_attempt_count"] >= 1:
             score += 0.28
-            reasons.append("message integrity failure reported")
+            reasons.append("message tampering attempt")
 
         if features["abnormal_burst_count"] >= 3:
             score += 0.18
@@ -250,7 +253,7 @@ class SecurityAgent:
         return (
             features["messages_per_minute"] >= 15
             or features["reconnect_count"] >= 2
-            or features["failed_integrity_count"] >= 1
+            or features["tamper_attempt_count"] >= 1
             or features["abnormal_burst_count"] >= 3
             or features["connection_attempt_count"] >= 4
         )

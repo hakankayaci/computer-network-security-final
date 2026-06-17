@@ -110,30 +110,33 @@ With the server running, use another terminal:
 python attacker_simulation.py
 ```
 
-The simulator performs only safe localhost actions:
+The simulator performs only safe localhost actions, in this order:
 
-- rapid message spam
-- repeated reconnect attempts
-- abnormal message size
-- burst traffic
-- a safe tamper request that flips one bit in the last encrypted ciphertext
+1. a safe tamper request that flips one bit in the last encrypted ciphertext (integrity demo),
+2. repeated reconnect attempts,
+3. rapid message spam and burst traffic,
+4. an abnormal message size.
 
-Watch the server terminal for:
+The tamper request runs first so the receiver reliably shows the integrity warning before the AI agent temporarily blocks the attacker.
 
-```text
-[AI SECURITY AGENT]
-Client: Attacker
-Risk Score: 0.87
-Status: SUSPICIOUS
-Reason: very high message frequency, repeated reconnect attempts
-Recommended Action: Temporarily block client in demo mode.
-```
-
-If Hakan and Melike are connected in encrypted mode and an encrypted message was sent before the tamper demo, Melike should print:
+If Hakan and Melike are connected in encrypted mode and Hakan sent an encrypted message before the tamper demo, Melike prints almost immediately:
 
 ```text
 [INTEGRITY WARNING] Warning: Message integrity check failed. Message may have been modified.
 ```
+
+Then, a few seconds later, watch the server terminal for:
+
+```text
+[AI SECURITY AGENT]
+Client: Attacker
+Risk Score: 0.80
+Status: SUSPICIOUS
+Reason: message tampering attempt, repeated reconnect attempts, many connection attempts, Isolation Forest detected anomalous metadata
+Recommended Action: Temporarily block client in demo mode.
+```
+
+The integrity failure is attributed to the attacker that tampered the message, never to Melike, who only reports it. Hakan and Melike are never flagged for normal chatting.
 
 ## Diffie-Hellman / X25519 Key Exchange
 
@@ -168,7 +171,7 @@ The AI security agent reads `server_logs.jsonl`. It does not read plaintext mess
 - messages per minute
 - average message size
 - reconnect count
-- failed integrity count
+- tampering attempt count (attributed to the client that tampered, never to the victim that reports it)
 - average time between messages
 - abnormal burst count
 - connection attempt count

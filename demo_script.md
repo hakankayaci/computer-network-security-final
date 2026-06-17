@@ -115,7 +115,9 @@ Say:
 
 ## Step 7: Run the Attacker Simulation
 
-Open another terminal:
+Make sure Hakan has already sent at least one encrypted message to Melike (Step 5),
+so the server has an encrypted message available for the safe tamper demo. Then open
+another terminal:
 
 ```powershell
 python attacker_simulation.py
@@ -125,30 +127,14 @@ Say:
 
 > This is not a real attack. It only creates suspicious local behavior for the demo.
 
-## Step 8: Show AI-Based Detection
+The simulation does two things, in this order:
 
-Watch the server terminal:
+1. First it sends one safe `tamper_last` request (the integrity demo).
+2. Then it generates suspicious traffic (reconnects, spam, large messages) for the AI demo.
 
-```text
-[AI SECURITY AGENT]
-Client: Attacker
-Risk Score: 0.87
-Status: SUSPICIOUS
-Reason: very high message frequency and repeated reconnect attempts
-Recommended Action: Temporarily block client in demo mode.
-```
+## Step 8: Show the Integrity Warning (appears first)
 
-Say:
-
-> The AI security agent does not read message contents. It only analyzes metadata such as message frequency, reconnect count, size, and integrity failures.
-
-## Step 9: Show Integrity Warning
-
-Before running the tamper demo, make sure Hakan has sent at least one encrypted message to Melike.
-
-The attacker simulation sends a `tamper_last` request. The server flips one ciphertext bit in a copy of the last encrypted message.
-
-Melike should see:
+Almost immediately, Melike's terminal shows:
 
 ```text
 [INTEGRITY WARNING] Warning: Message integrity check failed. Message may have been modified.
@@ -156,7 +142,29 @@ Melike should see:
 
 Say:
 
-> AES-GCM detects that the ciphertext was changed, so the receiver refuses to decrypt it.
+> The attacker flipped one bit of the ciphertext. AES-GCM detects the change, so the
+> receiver refuses to decrypt it. This proves message integrity.
+
+## Step 9: Show AI-Based Detection (a few seconds later)
+
+Now watch the server terminal. Within a few seconds the AI agent flags the attacker:
+
+```text
+[AI SECURITY AGENT]
+Client: Attacker
+Risk Score: 0.80
+Status: SUSPICIOUS
+Reason: message tampering attempt, repeated reconnect attempts, many connection attempts, Isolation Forest detected anomalous metadata
+Recommended Action: Temporarily block client in demo mode.
+[ALERT] Attacker is temporarily blocked for 20 seconds.
+```
+
+Say:
+
+> The AI security agent never reads message contents. It only analyzes metadata such as
+> message frequency, reconnect count, message size, and tampering attempts. Notice it
+> blames the attacker that tampered the message, never Melike, who only reported it.
+> Hakan and Melike are never flagged for normal chatting.
 
 ## Turkish Explanation for Presentation
 
