@@ -134,7 +134,13 @@ class SecurityAgent:
                 event
                 for event in client_events
                 if now - float(event.get("epoch", now)) <= 60
-            ] or client_events
+            ]
+            # Only assess clients with activity in the recent window. Without
+            # this, stale metadata from a previous session (e.g. an attacker
+            # that left long ago) would be re-analyzed and trigger phantom
+            # alerts every time the server reads the log.
+            if not recent_events:
+                continue
 
             message_events = [
                 event for event in recent_events if event.get("event_type") == "message"

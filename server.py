@@ -90,10 +90,12 @@ class ChatServer:
                 self._close_all_clients()
 
     def _prepare_log_files(self) -> None:
+        # Start every server run with empty logs. This guarantees a clean demo:
+        # metadata from a previous session can never leak into the AI agent's
+        # analysis and cause false alerts before any client has even connected.
         for path in (config.LOG_FILE, config.SUSPICIOUS_LOG_FILE):
-            if not os.path.exists(path):
-                with open(path, "w", encoding=config.ENCODING):
-                    pass
+            with open(path, "w", encoding=config.ENCODING):
+                pass
 
     def _close_all_clients(self) -> None:
         with self.clients_lock:
