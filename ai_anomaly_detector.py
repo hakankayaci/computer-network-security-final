@@ -79,22 +79,26 @@ class SecurityAgent:
             return None
 
         baseline = []
-        for i in range(80):
+        for i in range(120):
             baseline.append(
                 [
-                    2 + (i % 6),          # messages_per_minute
-                    35 + (i % 90),        # average_message_size
-                    0 if i % 10 else 1,   # reconnect_count
+                    1 + (i % 8),          # messages_per_minute: quiet to lively chat
+                    45 + (i % 170),       # average_message_size: incl. encrypted payloads
+                    0 if i % 7 else 1,    # reconnect_count: usually none
                     0,                    # failed_integrity_count
-                    4 + (i % 10),         # average_time_between_messages
-                    0 if i % 12 else 1,   # abnormal_burst_count
-                    1 if i % 8 else 2,    # connection_attempt_count
+                    3 + (i % 22),         # average_time_between_messages: 3-24s, plus idle
+                    0,                    # abnormal_burst_count: normal users do not burst
+                    1 if i % 5 else 2,    # connection_attempt_count
                 ]
             )
+        # A quiet client may have no messages yet, so the interval defaults to the
+        # full window. Include that case so an idle user is not seen as anomalous.
+        for gap in (45.0, 60.0):
+            baseline.append([0, 0, 0, 0, gap, 0, 1])
 
         model = IsolationForest(
             n_estimators=100,
-            contamination=0.10,
+            contamination=0.02,
             random_state=42,
         )
         model.fit(np.array(baseline, dtype=float))
@@ -164,10 +168,10 @@ class SecurityAgent:
                 or int(event.get("failed_integrity", 0) or 0) > 0
             )
 
-            time_span_seconds = 60.0
-            if message_times:
-                time_span_seconds = max(1.0, min(60.0, now - message_times[0]))
-            messages_per_minute = len(message_events) * (60.0 / time_span_seconds)
+            # Count the messages seen in the recent (<=60s) window directly.
+            # Extrapolating from a tiny time span used to inflate the rate for a
+            # few normal messages and caused false anomaly alerts.
+            messages_per_minute = float(len(message_events))
 
             features_by_client[client] = {
                 "messages_per_minute": messages_per_minute,
@@ -229,9 +233,30 @@ class SecurityAgent:
         raw_score = float(self.model.decision_function(vector)[0])
         return max(0.0, min(0.55, 0.45 - raw_score))
 
+    def _has_enough_activity(self, features: Dict[str, float]) -> bool:
+        """Whether a client produced enough metadata to trust the ML verdict.
+
+        The Isolation Forest is only a secondary signal. On a quiet, well behaved
+        client (a few normal messages, no reconnects, no integrity failures) it
+        can produce false positives, so it is not allowed to raise an alert on
+        its own until one of these clearly-abnormal signals is present.
+        """
+        return (
+            features["messages_per_minute"] >= 15
+            or features["reconnect_count"] >= 2
+            or features["failed_integrity_count"] >= 1
+            or features["abnormal_burst_count"] >= 3
+            or features["connection_attempt_count"] >= 4
+        )
+
     def assess_features(self, client: str, features: Dict[str, float]) -> SecurityAssessment:
         rule_score, reasons = self._rule_score(features)
         model_score = self._model_risk(features)
+
+        # Do not let the Isolation Forest alone block a normal, low-volume client.
+        if not self._has_enough_activity(features):
+            model_score = min(model_score, 0.30)
+
         risk_score = max(rule_score, model_score)
 
         if model_score >= 0.80 and "Isolation Forest detected anomalous metadata" not in reasons:

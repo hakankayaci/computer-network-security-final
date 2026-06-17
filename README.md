@@ -173,7 +173,7 @@ The AI security agent reads `server_logs.jsonl`. It does not read plaintext mess
 - abnormal burst count
 - connection attempt count
 
-If `scikit-learn` is installed, it uses Isolation Forest plus rules. Otherwise, it uses the rule-based fallback.
+The deterministic rules are the primary detector because they give clear, explainable reasons (for example "very high message frequency"). When `scikit-learn` is installed, an Isolation Forest acts as an additional signal. To avoid false positives, the model is treated as a secondary signal: it does not raise an alert on its own for a low-activity, well-behaved client, so normal users such as Hakan and Melike are not flagged during ordinary chatting. If `scikit-learn` is unavailable, the rule-based fallback is used alone.
 
 Run the detector manually:
 
