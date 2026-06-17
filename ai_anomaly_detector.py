@@ -12,7 +12,7 @@ import os
 import statistics
 import time
 from dataclasses import dataclass
-from typing import Dict, Iterable, List, Optional
+from typing import Dict, Iterable, List, Optional, Tuple
 
 import config
 
@@ -181,7 +181,7 @@ class SecurityAgent:
 
         return features_by_client
 
-    def _rule_score(self, features: Dict[str, float]) -> (float, List[str]):
+    def _rule_score(self, features: Dict[str, float]) -> Tuple[float, List[str]]:
         score = 0.0
         reasons = []
 
