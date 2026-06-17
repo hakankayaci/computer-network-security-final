@@ -190,6 +190,24 @@ Generate sample demo logs:
 python demo_data_generator.py
 ```
 
+## Troubleshooting
+
+**The server prints `[SERVER] Listening` but shows nothing else (no spy view), yet messages still arrive.**
+A previous server is most likely still running in the background and is handling the
+connections instead of the one you can see. The server now refuses to start a second
+time and prints `Could not bind to 127.0.0.1:5050`. To fix it, close the old server
+window, or stop stray Python processes:
+
+```powershell
+taskkill /F /IM python.exe
+```
+
+Then start the server again. Start only one server at a time.
+
+**`Could not bind to 127.0.0.1:5050`.**
+Another program (usually an old server) is using the port. Stop it as above, or change
+`PORT` in `config.py`.
+
 ## Limitations
 
 - This is an educational local demo, not production security software.

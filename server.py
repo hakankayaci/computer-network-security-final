@@ -1,6 +1,7 @@
 """Threaded localhost chat server with spy view and AI metadata monitoring."""
 
 import copy
+import functools
 import json
 import os
 import socket
@@ -13,6 +14,13 @@ from typing import Dict, Optional, Tuple
 import config
 from ai_anomaly_detector import SecurityAgent
 from crypto_utils import ciphertext_hex_preview, tamper_encrypted_payload
+
+# Always flush server output immediately. In a normal terminal Python already
+# line-buffers, but if the output is piped or redirected (e.g. to a log file)
+# it would otherwise be block-buffered and the live [SPY SERVER VIEW] / AI
+# alerts would not appear until the buffer filled. This keeps the demo readable
+# everywhere.
+print = functools.partial(print, flush=True)
 
 
 def timestamp() -> str:
@@ -68,8 +76,26 @@ class ChatServer:
         monitor_thread.start()
 
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server_socket:
-            server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-            server_socket.bind((config.HOST, config.PORT))
+            # On Unix SO_REUSEADDR lets us rebind quickly after a restart. On
+            # Windows it has different semantics: it would let a SECOND server
+            # silently share the same port, so clients could connect to a stale
+            # leftover server while this one looks frozen. So we do not set it on
+            # Windows, and we let bind() fail loudly if the port is already taken.
+            if os.name != "nt":
+                server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            try:
+                server_socket.bind((config.HOST, config.PORT))
+            except OSError:
+                print(
+                    f"[SERVER] Could not bind to {config.HOST}:{config.PORT}. "
+                    "Another server is probably already running on this port."
+                )
+                print(
+                    "[SERVER] Close the other server window, or stop stray python "
+                    "processes (Task Manager, or: taskkill /F /IM python.exe), "
+                    "then start the server again."
+                )
+                return
             server_socket.listen()
             print(f"[SERVER] Listening on {config.HOST}:{config.PORT}")
             print("[SERVER] Press Ctrl+C to stop the server.")
