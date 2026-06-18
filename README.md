@@ -211,10 +211,48 @@ Another program (usually an old server) is using the port. Stop it as above, or 
 
 ## Limitations
 
-- This is an educational local demo, not production security software.
-- Public keys are relayed without certificates or identity verification, so a real production system would need authentication.
-- The AI model uses synthetic baseline behavior for demonstration.
-- The temporary blocking feature is only for local demo mode.
+This is an educational demo, not production security software. The design makes
+several deliberate trade-offs, and understanding them is part of the project. The
+most important limitations, grouped by security property, are:
+
+**Authentication and key exchange**
+- Public keys are relayed through the server **without certificates or identity
+  verification**. A malicious or compromised server could swap the keys and mount
+  a **man-in-the-middle (MITM)** attack. A real system would need authenticated
+  key exchange (a PKI/certificates, or trust-on-first-use key fingerprints).
+- There is **no user authentication**: a client can register under any name, so
+  **impersonation** is possible. There are no accounts, passwords, or login.
+
+**Confidentiality and transport**
+- Only the message body is end-to-end encrypted. The transport is plain TCP, so
+  **metadata** (who talks to whom, timing, message sizes) is visible, and plain
+  mode sends everything in clear text by design (to demonstrate the problem).
+- Session keys are ephemeral and per-session. This gives forward secrecy, but it
+  also means there is no long-term identity to recognise a peer across sessions.
+
+**Integrity and replay**
+- AES-GCM detects tampering of a single message, but the demo does **not protect
+  against replay attacks**: a captured ciphertext could be re-sent and would
+  decrypt again, because there are no message counters, sequence numbers, or
+  timestamps.
+- Message ordering and delivery are trusted to the server. A malicious server
+  could still **drop, delay, or reorder** messages (it just cannot read them).
+
+**AI anomaly detection**
+- The Isolation Forest is trained on a **small synthetic baseline**, not on real
+  traffic, and the thresholds are tuned for the demo. On real traffic it could
+  produce **false positives** or miss novel attacks.
+- The agent analyses the server's own metadata logs, so it **trusts the server**.
+- The temporary block is **demo-only and name-based**, so it is easily bypassed
+  (an attacker can change names or source addresses).
+
+**Availability**
+- There is **no real denial-of-service protection**. The block is cosmetic for
+  the demo, and a determined flood could still overwhelm the server.
+
+**General**
+- The code has **not been security-audited** and uses fixed demo parameters. It
+  is intended only for local, safe, educational use.
 
 ## Future Improvements
 
