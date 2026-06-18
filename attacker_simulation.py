@@ -12,9 +12,18 @@ from typing import Dict, Optional
 import config
 
 
-def send_json(sock: socket.socket, payload: Dict) -> None:
-    raw = json.dumps(payload, ensure_ascii=False) + "\n"
-    sock.sendall(raw.encode(config.ENCODING))
+def send_json(sock: socket.socket, payload: Dict) -> bool:
+    """Send one JSON line. Returns False if the connection is already closed.
+
+    Being disconnected is the expected outcome here: once the AI security agent
+    flags this client it blocks and drops the connection, so a send can fail.
+    """
+    try:
+        raw = json.dumps(payload, ensure_ascii=False) + "\n"
+        sock.sendall(raw.encode(config.ENCODING))
+        return True
+    except OSError:
+        return False
 
 
 def connect_attacker(name: str = "Attacker") -> Optional[socket.socket]:
@@ -45,16 +54,24 @@ def repeated_reconnect_attempts() -> None:
         time.sleep(0.12)
 
 
-def rapid_message_spam(sock: socket.socket) -> None:
+def rapid_message_spam(sock: socket.socket) -> bool:
+    """Send burst spam. Returns False if the server blocked us part-way."""
     print("[ATTACKER SIMULATION] Simulating rapid message spam and burst traffic.")
     for index in range(35):
-        send_json(sock, {
+        delivered = send_json(sock, {
             "type": "chat",
             "mode": config.PLAIN_MODE,
             "recipient": "Hakan",
             "message": f"Local demo spam message {index}",
         })
+        if not delivered:
+            print(
+                "[ATTACKER SIMULATION] Connection closed by the server: the AI "
+                "security agent blocked this client. This is the expected result."
+            )
+            return False
         time.sleep(0.04)
+    return True
 
 
 def abnormal_message_size(sock: socket.socket) -> None:
@@ -97,12 +114,17 @@ def main() -> None:
         return
     try:
         time.sleep(0.3)
-        rapid_message_spam(sock)
-        abnormal_message_size(sock)
+        # If the spam already got us blocked, the connection is gone, so skip
+        # the last step instead of failing on a closed socket.
+        if rapid_message_spam(sock):
+            abnormal_message_size(sock)
         print("[ATTACKER SIMULATION] Done. Watch the server terminal for AI alerts.")
         time.sleep(1.0)
     finally:
-        sock.close()
+        try:
+            sock.close()
+        except OSError:
+            pass
 
 
 if __name__ == "__main__":
