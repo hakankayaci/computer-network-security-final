@@ -170,6 +170,10 @@ Bu, üretim amaçlı bir güvenlik yazılımı değil, eğitim amaçlı bir prot
 
 **Genel.** Kod, güvenlik denetiminden geçmemiştir ve yalnızca yerel, güvenli ve eğitim amaçlı kullanım için tasarlanmıştır.
 
+Hoca sorusu:A terminali ve B terminali sunucu üzerinden nasıl şifreli mesajlaşıyorlar, sunucu neden görmüyor?
+
+- Sunucu şifreyi göremez çünkü,  şifre çözme anahtarı yok. eğer şifreyi çözmeye çalışan bir atak gerçekleşir ise de biti değiştirilen key’i AI security agent algılar ve atağı bloklar.
+
 ## Kaynak Kodu
 
 Kaynak kodu: https://github.com/hakankayaci/computer-network-security-final
